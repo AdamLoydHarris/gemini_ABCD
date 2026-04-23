@@ -29,6 +29,7 @@ Rules:
 - After each move you will receive a reward of +0 or +1
 - Your goal is to collect as many +1 rewards as possible over 50 steps
 - The reward pattern is determined by a hidden task that you must try to figure out and exploit
+- The rule of the task is the same across all sessions, but some specifics may change each session
 
 Ready to begin."""
 
@@ -123,17 +124,19 @@ def run_experiment():
     task = random_task()
     env = ABCD(task)
 
+    # Single chat across all sessions so the model can learn across scrambles
+    chat = client.chats.create(model=MODEL)
+    delay = REQUEST_DELAY
+
     with log_file.open('w') as log_fh:
         for session in range(1, NUM_SESSIONS + 1):
             print(f"\n{'='*50}")
             print(f"Session {session}/{NUM_SESSIONS}  |  task: {env.task}")
             print(f"{'='*50}")
 
-            chat = client.chats.create(model=MODEL)
-            delay = REQUEST_DELAY
-
-            # Send introduction
-            _, delay = api_call_with_backoff(chat, INTRO_PROMPT, delay)
+            # Intro only once at the very start
+            if session == 1:
+                _, delay = api_call_with_backoff(chat, INTRO_PROMPT, delay)
 
             session_total = 0
             last_reward = 0
