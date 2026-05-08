@@ -16,6 +16,8 @@ import sys
 from collections import deque
 from pathlib import Path
 
+STEPS_PER_SESSION = 50
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -58,8 +60,8 @@ def bfs_distance(start: int, end: int) -> int:
 # Log loading
 # ---------------------------------------------------------------------------
 
-def load_log(log_path: Path) -> tuple[list[dict], list[dict]]:
-    steps, reflections = [], []
+def load_log(log_path: Path) -> tuple[list[dict], list[dict], list[dict]]:
+    steps, reflections, intros = [], [], []
     with log_path.open() as f:
         for line in f:
             record = json.loads(line)
@@ -67,7 +69,9 @@ def load_log(log_path: Path) -> tuple[list[dict], list[dict]]:
                 steps.append(record)
             elif record['type'] == 'reflection':
                 reflections.append(record)
-    return steps, reflections
+            elif record['type'] == 'intro':
+                intros.append(record)
+    return steps, reflections, intros
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +150,7 @@ def da_transition_analysis(visits: list[dict]) -> list[dict]:
 # Printing
 # ---------------------------------------------------------------------------
 
-def print_summary(sessions: dict, visits: list[dict], da: list[dict],
-                  reflections: list[dict]):
+def print_summary(sessions: dict, visits: list[dict], da: list[dict]):
     print("\n" + "=" * 60)
     print("REWARD SUMMARY (per session)")
     print("=" * 60)
@@ -186,12 +189,36 @@ def print_summary(sessions: dict, visits: list[dict], da: list[dict],
         print(f"\n  Mean D→A efficiency: {np.mean(effs):.2f}  "
               f"(all goals mean: {np.mean([v['efficiency'] for v in visits]):.2f})")
 
-    print("\n" + "=" * 60)
-    print("POST-SESSION REFLECTIONS")
-    print("=" * 60)
-    for r in reflections:
-        print(f"\n--- Session {r['session']} (total={r['session_total']}) ---")
-        print(r['reflection'])
+
+
+def print_prompt_responses(intros: list[dict], reflections: list[dict], out_dir: Path):
+    lines = []
+
+    lines.append("=" * 60)
+    lines.append("AGENT RESPONSE TO INITIAL PROMPT")
+    lines.append("=" * 60)
+    if not intros:
+        lines.append("  (no intro record in log — run a new experiment to capture this)")
+    for rec in intros:
+        lines.append(f"\nPrompt:\n{rec['prompt']}")
+        lines.append(f"\nResponse:\n{rec['response']}")
+
+    lines.append("\n" + "=" * 60)
+    lines.append("AGENT REFLECTIONS (post-session)")
+    lines.append("=" * 60)
+    if not reflections:
+        lines.append("  (no reflection records in log — log may predate a completed session)")
+    for rec in sorted(reflections, key=lambda r: r['session']):
+        lines.append(f"\n--- Session {rec['session']}  "
+                     f"(session total: {rec['session_total']}/{STEPS_PER_SESSION}) ---")
+        lines.append(rec['reflection'])
+
+    text = "\n".join(lines)
+    print("\n" + text)
+
+    path = out_dir / "prompt_responses.txt"
+    path.write_text(text)
+    print(f"  Saved: {path}")
 
 
 # ---------------------------------------------------------------------------
@@ -455,14 +482,15 @@ def main():
     out_dir.mkdir(exist_ok=True)
 
     print(f"Loading {log_path} ...")
-    steps, reflections = load_log(log_path)
-    print(f"  {len(steps)} step records, {len(reflections)} reflections")
+    steps, reflections, intros = load_log(log_path)
+    print(f"  {len(steps)} step records, {len(reflections)} reflections, {len(intros)} intro record(s)")
 
     sessions = session_reward_summary(steps)
     visits = goal_visit_efficiency(steps)
     da = da_transition_analysis(visits)
 
-    print_summary(sessions, visits, da, reflections)
+    print_summary(sessions, visits, da)
+    print_prompt_responses(intros, reflections, out_dir)
 
     print("\nGenerating plots ...")
     plot_cumulative_rewards(sessions, out_dir)

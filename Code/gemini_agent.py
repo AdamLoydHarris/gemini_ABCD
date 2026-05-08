@@ -30,6 +30,7 @@ Rules:
 - Your goal is to collect as many +1 rewards as possible over 50 steps
 - The reward pattern is determined by a hidden task that you must try to figure out and exploit
 - The rule of the task is the same across all sessions, but some specifics may change each session
+- You are looking for a repeating sequence of four reward locations. the specific locations in the sequence may change each session, but the underlying pattern will be the same.
 
 Ready to begin."""
 
@@ -136,7 +137,12 @@ def run_experiment():
 
             # Intro only once at the very start
             if session == 1:
-                _, delay = api_call_with_backoff(chat, INTRO_PROMPT, delay)
+                intro_response, delay = api_call_with_backoff(chat, INTRO_PROMPT, delay)
+                log_record(log_fh, {
+                    "type": "intro",
+                    "prompt": INTRO_PROMPT,
+                    "response": intro_response,
+                })
 
             session_total = 0
             last_reward = 0

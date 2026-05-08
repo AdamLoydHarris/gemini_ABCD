@@ -1,1 +1,0 @@
-{"type": "step", "session": 1, "step": 1, "task": {"A": 4, "B": 6, "C": 2, "D": 1}, "agent_node": 5, "agent_rc": [1, 1], "current_goal": "A", "goal_node": 4, "goal_rc": [1, 0], "action": "N", "reward": 0, "session_total": 0, "grid": "X X X\nX X X\nX O X", "llm_raw_response": "N", "parse_error": false}
