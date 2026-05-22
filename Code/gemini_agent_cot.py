@@ -12,8 +12,8 @@ from ABCD import ABCD, random_task
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-MODEL = "gemini-3.1-flash-lite-preview"  # free tier: 15 RPM, 1500 RPD
-STEPS_PER_SESSION = 50
+MODEL = "gemini-3.1-flash-lite"  # free tier: 15 RPM, 1500 RPD
+STEPS_PER_SESSION = 75
 NUM_SESSIONS = 9
 REQUEST_DELAY = 8.0   # seconds between API calls (~7 RPM, comfortable under 15 RPM free limit)
 MAX_BACKOFF = 60.0
@@ -25,8 +25,10 @@ Rules:
 - You are shown as 'O' on the grid; all other cells are 'X'
 - Moving into a wall keeps you in place
 - After each move you will receive a reward of +0 or +1
-- Your goal is to collect as many +1 rewards as possible over 50 steps
+- Your goal is to collect as many +1 rewards as possible over 75 steps
 - The reward pattern is determined by a hidden task that you must try to figure out and exploit
+- The rule of the task is the same across all sessions, but some specifics may change each session
+- Think *sequences*
 
 
 Each turn you may reason freely before deciding. End every response with exactly one letter on its own line: N, E, S, or W (for North, East, South, West).
@@ -129,9 +131,9 @@ def run_experiment():
 
     with log_file.open('w') as log_fh:
         for session in range(1, NUM_SESSIONS + 1):
-            print(f"\n{'='*50}")
+            print(f"\n{'='*75}")
             print(f"Session {session}/{NUM_SESSIONS}  |  task: {env.task}")
-            print(f"{'='*50}")
+            print(f"{'='*75}")
 
             # Intro only once at the very start
             if session == 1:
